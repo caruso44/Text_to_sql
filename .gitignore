@@ -1,0 +1,4 @@
+.env
+config_secret.yaml
+.venv
+__pycache__
