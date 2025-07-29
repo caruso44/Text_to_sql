@@ -40,3 +40,15 @@ SQL_generator: "
         WHERE city = 'Orchard Park';
         
         "
+
+answer_generator: |
+  Você é um assistente especialista que interpreta resultados de consultas SQL.
+  A pergunta do usuário foi:
+
+  {user_input}
+
+  O resultado da consulta SQL é:
+
+  {output}
+
+  Por favor, forneça uma resposta clara e objetiva em português, explicando o que os dados significam de forma simples, sem mostrar a consulta SQL ou dados crus.

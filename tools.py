@@ -27,3 +27,18 @@ def generate_SQL(user_input):
     sql_string = chain.invoke({"user_input": user_input})
     sql = extract_sql(sql_string)
     return sql
+
+def generate_answer(input, output):
+    load_dotenv() 
+    llm = ChatOpenAI(model="gpt-4o", temperature=0)
+    with open('config.yaml', 'r', encoding='utf-8') as file:
+        config = yaml.safe_load(file)
+    template_schema : str = config["answer_generator"]
+    template = PromptTemplate(
+        input_variables=['user_input', 'output'],
+        template=template_schema
+    )
+    chain =  template | llm | StrOutputParser()
+    print(output)
+    answer = chain.invoke({"user_input": input, "output": output})
+    return answer
