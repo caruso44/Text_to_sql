@@ -12,7 +12,7 @@ from langgraph.graph import END, START, StateGraph
 
 from utils import extract_sql
 
-def generate_SQL(user_input):
+def generate_SQL_tool(user_input):
     load_dotenv() 
     llm = ChatOpenAI(model="gpt-4o", temperature=0)
 
@@ -28,7 +28,7 @@ def generate_SQL(user_input):
     sql = extract_sql(sql_string)
     return sql
 
-def generate_answer(input, output):
+def generate_answer_tool(input, output):
     load_dotenv() 
     llm = ChatOpenAI(model="gpt-4o", temperature=0)
     with open('config.yaml', 'r', encoding='utf-8') as file:
