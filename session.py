@@ -1,4 +1,3 @@
-from pydantic import BaseModel
 import yaml
 from fastapi import HTTPException, FastAPI, Response, Depends
 from uuid import UUID, uuid4
@@ -7,9 +6,8 @@ from fastapi_sessions.backends.implementations import InMemoryBackend
 from fastapi_sessions.session_verifier import SessionVerifier
 from fastapi_sessions.frontends.implementations import SessionCookie, CookieParameters
 
+from schemas import SessionData
 
-class SessionData(BaseModel):
-    session_name: str
 
 
 class BasicVerifier(SessionVerifier[UUID, SessionData]):

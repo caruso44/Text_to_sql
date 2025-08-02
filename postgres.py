@@ -17,3 +17,4 @@ def run_sql(query: str):
     except Exception as e:
         print(f"Error executing SQL: {e}")
     return output
+
