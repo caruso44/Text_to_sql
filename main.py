@@ -10,27 +10,33 @@ from fastapi_sessions.session_verifier import SessionVerifier
 from fastapi_sessions.frontends.implementations import SessionCookie, CookieParameters
 from fastapi.security import OAuth2PasswordRequestForm
 
-from postgres import run_sql
-from tools import generate_SQL_tool, generate_answer_tool
-from rewoo_agent import RewooAgent
+from models.tools import generate_SQL_tool, generate_answer_tool
+from models.rewoo_agent import RewooAgent
 from session import SessionData, BasicVerifier
-from schemas import Token, User, UserCredentials
+from schemas.user import User, UserCredentials
+from schemas.security import Token
 from security import authenticate_user, create_access_token, get_password_hash
-from utils import get_table_data, write_table_data
+from utils import get_table_data, write_table_data, run_sql
 
 
 app = FastAPI()
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
 cookie_params = CookieParameters()
 user_sessions: dict[str, list[UUID]] = {}
 with open('config_secret.yaml', 'r', encoding='utf-8') as file:
+    config_secret = yaml.safe_load(file)
+
+with open('config.yaml', 'r', encoding='utf-8') as file:
     config = yaml.safe_load(file)
+
+
+ACCESS_TOKEN_EXPIRE_MINUTES = config['ACCESS_TOKEN_EXPIRE_MINUTES']
 
 cookie = SessionCookie(
     cookie_name="cookie",
     identifier="general_verifier",
     auto_error=True,
-    secret_key=config['COOKIE_SECRET_KEY'],
+    secret_key=config_secret['COOKIE_SECRET_KEY'],
     cookie_params=cookie_params,
 )
 backend = InMemoryBackend[UUID, SessionData]()
@@ -46,14 +52,20 @@ verifier = BasicVerifier(
 @app.get("/run_query/{question}")
 async def read_item(question):
     sql = generate_SQL_tool(question)
-    output = run_sql(sql)
+    output = run_sql(sql, "store_info")
     answer = generate_answer_tool(question, str(output))
     return {"answer": answer}
 
 @app.get("/run_query_rewoo/{question}")
 async def read_item(question):
     agent = RewooAgent()
-    answer = agent.invoke(question)
+    dict_input = {
+        "user_input": question,
+        "iter" : 0,
+        "max_iter" : 10,
+        "plan" : ""
+    }
+    answer = agent.invoke(dict_input)
     return {"answer": answer}
 
 

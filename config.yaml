@@ -1,3 +1,5 @@
+ACCESS_TOKEN_EXPIRE_MINUTES: 30
+
 SQL_generator: "
         Você é um assistente que converte perguntas em linguagem natural em consultas SQL.  
         Considere o seguinte banco de dados relacional dividido entre os domínios de Vendas e Produção.  

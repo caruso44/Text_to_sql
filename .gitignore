@@ -2,3 +2,4 @@
 config_secret.yaml
 .venv
 __pycache__
+.vscode
