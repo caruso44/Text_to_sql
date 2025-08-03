@@ -49,15 +49,15 @@ verifier = BasicVerifier(
 )
 
 
-@app.get("/run_query/{question}")
-async def read_item(question):
+@app.get("/run_query_fewshot/{question}", tags = ["LLM"])
+async def Text_to_SQL_FewShot(question):
     sql = generate_SQL_tool(question)
     output = run_sql(sql, "store_info")
     answer = generate_answer_tool(question, str(output))
     return {"answer": answer}
 
-@app.get("/run_query_rewoo/{question}")
-async def read_item(question):
+@app.get("/run_query_rewoo/{question}", tags = ["LLM"])
+async def Text_to_SQL_Rewoo(question):
     agent = RewooAgent()
     dict_input = {
         "user_input": question,
@@ -69,12 +69,12 @@ async def read_item(question):
     return {"answer": answer}
 
 
-@app.get("/whoami", dependencies=[Depends(cookie)])
+@app.get("/whoami", dependencies=[Depends(cookie)], tags = ["Session"])
 async def whoami(session_data: SessionData = Depends(verifier)):
     return session_data
 
 
-@app.delete("/delete_session/{session_id}")
+@app.delete("/delete_session/{session_id}", tags = ["Session"])
 async def delete_specific_session(session_id: UUID, response: Response):
     session_data = await backend.read(session_id)
     if session_data is None:
@@ -87,7 +87,7 @@ async def delete_specific_session(session_id: UUID, response: Response):
     return {"message": f"Deleted session {session_id}"}
 
 
-@app.post("/create_session/{name}")
+@app.post("/create_session/{name}", tags = ["Session"])
 async def create_session(name: str, response: Response):
     session_id = uuid4()
     data = SessionData(session_name=name)
@@ -101,12 +101,12 @@ async def create_session(name: str, response: Response):
 
     return {"message": f"Created session '{name}'", "session_id": str(session_id)}
 
-@app.get("/list_sessions/{name}")
+@app.get("/list_sessions/{name}", tags = ["Session"])
 async def list_sessions(name: str):
     sessions = user_sessions.get(name, [])
     return {"sessions": [str(sid) for sid in sessions]}
 
-@app.post("/switch_session/{session_id}")
+@app.post("/switch_session/{session_id}", tags = ["Session"])
 async def switch_session(session_id: UUID, response: Response):
     session_data = await backend.read(session_id)
     if session_data is None:
@@ -116,7 +116,7 @@ async def switch_session(session_id: UUID, response: Response):
     return {"message": f"Switched to session '{session_data.session_name}'", "session_id": str(session_id)}
 
 
-@app.post("/token")
+@app.post("/token", tags = ["Security"])
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 ) -> Token:
@@ -133,7 +133,7 @@ async def login_for_access_token(
     )
     return Token(access_token=access_token, token_type="bearer")
 
-@app.post("/create_login")
+@app.post("/create_login", tags = ["Security"])
 async def create_login(
     login_info : Annotated[UserCredentials, Depends()] 
 ):

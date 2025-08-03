@@ -3,7 +3,7 @@ import yaml
 import pandas as pd
 from sqlalchemy import create_engine, text
 
-from schemas.user import User  # Custom Pydantic schema for user data
+from schemas.user import User
 
 
 def extract_sql(code_block: str) -> str:
