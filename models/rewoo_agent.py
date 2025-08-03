@@ -18,6 +18,8 @@ class AgentSchema(TypedDict):
     iter: int
     max_iter: int
     plan: tuple
+    output : str
+    chat_history: str
 
 class RewooAgent:
     def __init__(self) -> None:
@@ -27,22 +29,26 @@ class RewooAgent:
             self.config = yaml.safe_load(file)
         math_template : str = self.config["Rewoo_Template"]
         template = PromptTemplate(
-            input_variables=['user_input'],
+            input_variables=['user_input', 'chat_history'],
             template=math_template
         )
-        chain = {'user_input': itemgetter("user_input")} | template | llm | StrOutputParser()
+        chain = {'user_input': itemgetter("user_input"), 'chat_history': itemgetter("chat_history")} | template | llm | StrOutputParser()
         self.chain = chain
         
         def plan_step(state: AgentSchema):
             user_input = state["user_input"]
+            chat_history = state["chat_history"]
             iteraction = state["iter"]
             result_dict: AgentSchema = {}
-            plan = self.chain.invoke({"user_input": user_input})
+            plan = self.chain.invoke({"user_input": user_input, "chat_history" : chat_history})
             plan_list = self.get_plan_list(plan)
             result_dict["user_input"] = user_input
             result_dict['plan'] = plan_list
             result_dict["iter"] = iteraction + 1
             result_dict["max_iter"] = state["max_iter"]
+            result_dict["output"] = state["output"]
+            result_dict["max_iter"] = state["max_iter"]
+            result_dict["chat_history"] = state["chat_history"]
             return result_dict
         
         def solve_step(state: AgentSchema):
@@ -60,9 +66,11 @@ class RewooAgent:
             except Exception as e:
                 print(e)
                 result_dict['plan'] = []
-            result_dict["user_input"] = ans
+            result_dict["output"] = ans
+            result_dict["user_input"] = state["user_input"]
             result_dict["iter"] = iteraction + 1
             result_dict["max_iter"] = state["max_iter"]
+            result_dict["chat_history"] = state["chat_history"]
             return result_dict
 
     

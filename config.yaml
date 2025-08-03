@@ -69,6 +69,7 @@ Rewoo_Template: |
         3) Planejamento de Tarefas  
         Para cada tarefa complexa, identifique os passos intermediários necessários para chegar à resposta. Nomeie cada passo como `#S1`, `#S2`, etc., e descreva o que ele deve fazer.  
         Se uma tarefa puder ser feita em uma única operação, descreva-a como um único passo.
+        Ao realizar seu planejamento considere o histórico de perguntas anteriores {chat_history}
 
         4) O esquema relacional desse banco de dados consiste em:
 
