@@ -4,6 +4,7 @@ from uuid import UUID
 
 
 class SessionData(BaseModel):
+    session_id: UUID
     session_name: str
 
 class ChatMessage(BaseModel):
@@ -11,11 +12,3 @@ class ChatMessage(BaseModel):
     message: str
     question : str
     timestamp: datetime
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
-
-class TokenData(BaseModel):
-    username: str | None = None

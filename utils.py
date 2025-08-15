@@ -75,6 +75,36 @@ def write_table_data(db_name: str, table_name: str, data):
     except Exception as e:
         return {"error": str(e)}
 
+
+def delete_table_data(db_name: str, table_name: str, column: str, value):
+    """
+    Deletes all rows from a given table where column = value.
+
+    Args:
+        db_name (str): Database name.
+        table_name (str): Table to delete from.
+        column (str): Column to match on.
+        value: Value to match for deletion.
+
+    Returns:
+        dict: Status message.
+    """
+    with open("config_secret.yaml", "r") as f:
+        config = yaml.safe_load(f)
+    db = config.get("DB_LOGIN_PARAMS")
+    db_url = f"postgresql://{db['user']}:{db['password']}@{db['host']}:{db['port']}/{db_name}"
+    try:
+        engine = create_engine(db_url)
+        with engine.connect() as conn:
+            conn.execute(
+                text(f'DELETE FROM "{table_name}" WHERE "{column}" = :value'),
+                {"value": str(value)}
+            )
+            conn.commit()
+        return {"status": "success"}
+    except Exception as e:
+        return {"error": str(e)}
+
 def get_Chat_history(session_id, db_name = "users", table_name = "User_Chat_History"):
     """
     Retrieves the last 5 messages from the specified table for a given session ID.
