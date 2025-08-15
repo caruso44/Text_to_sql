@@ -23,7 +23,7 @@ It is a normalized relational database designed for retail operations.
 | **LangChain**             | A framework to build applications powered by language models. It’s used to integrate LLM-based reasoning, prompt engineering, and tool usage like SQL execution.                 |
 | **PostgreSQL**           | The relational database used to store the Bike Store schema and manage chat history. Enables SQL execution and retrieval.                                                        |
 | **JWT (JSON Web Tokens)** | Used for stateless user authentication. Provides secure access to the API via login tokens.                                                                                      |
-| **Passlib + Bcrypt**      | Secure password hashing to store user credentials safely in the database.                                                                                                        |
+| **Passlib**      | Secure password hashing to store user credentials safely in the database.                                                                                                        |
 | **Pydantic**              | Used for data validation and serialization within FastAPI. Ensures input/output data follows strict schema definitions.                                                          |
 | **YAML**                  | Used for external configuration of models and tools to support flexible experimentation and setup.                                                                               |
 
