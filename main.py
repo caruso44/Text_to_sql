@@ -9,7 +9,7 @@ from fastapi import FastAPI, FastAPI, Response, Depends, HTTPException, status
 from fastapi_sessions.backends.implementations import InMemoryBackend
 from fastapi_sessions.session_verifier import SessionVerifier
 from fastapi_sessions.frontends.implementations import SessionCookie, CookieParameters
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from models.tools import generate_SQL_tool, generate_answer_tool
 from models.rewoo_agent import RewooAgent
@@ -17,7 +17,7 @@ from session import SessionData, BasicVerifier
 from schemas.user import User, UserCredentials
 from schemas.security import Token
 from schemas.session import ChatMessage
-from security import authenticate_user, create_access_token, get_password_hash
+from security import authenticate_user, create_access_token, get_password_hash, get_current_user
 from utils import get_table_data, write_table_data, run_sql, get_Chat_history
 
 
@@ -50,6 +50,7 @@ verifier = BasicVerifier(
     auth_http_exception=HTTPException(status_code=403, detail="invalid session"),
 )
 
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 @app.get("/run_query_fewshot/{question}", tags = ["LLM"])
 async def Text_to_SQL_FewShot(question):
@@ -60,10 +61,13 @@ async def Text_to_SQL_FewShot(question):
 
 
 @app.get("/run_query_rewoo/{question}", tags = ["LLM"])
-async def Text_to_SQL_Rewoo(question : str, session_id: UUID):
+async def Text_to_SQL_Rewoo(
+    question : str, 
+    session_id: UUID, 
+    current_user: str = Depends(get_current_user)
+    ):
     agent = RewooAgent()
     chat_history = get_Chat_history(session_id)
-    print(chat_history)
     dict_input = {
         "user_input": question,
         "iter" : 0,
@@ -80,9 +84,6 @@ async def Text_to_SQL_Rewoo(question : str, session_id: UUID):
     write_table_data("users", "User_Chat_History", data)
     return data
 
-@app.get("/whoami", dependencies=[Depends(cookie)], tags = ["Session"])
-async def whoami(session_data: SessionData = Depends(verifier)):
-    return session_data
 
 
 @app.delete("/delete_session/{session_id}", tags = ["Session"])
@@ -146,9 +147,7 @@ async def login_for_access_token(
 
 
 @app.post("/create_login", tags = ["Security"])
-async def create_login(
-    login_info : Annotated[UserCredentials, Depends()] 
-):
+async def create_login(login_info : Annotated[UserCredentials, Depends()]):
     users_data = get_table_data("users", "user_info")
     if login_info.email in users_data['email']:
          raise Exception
@@ -158,6 +157,10 @@ async def create_login(
                           hashed_password= get_password_hash(login_info.password))
         write_table_data("users", "user_info", user_login)
 
+
+@app.get("/users/me", tags = ["Security"])
+def read_users_me(token: str = Depends(oauth2_scheme)):
+    return {"token": token}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

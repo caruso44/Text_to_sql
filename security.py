@@ -8,6 +8,7 @@ from fastapi.security import OAuth2PasswordBearer
 from passlib.context import CryptContext
 from fastapi import Depends, FastAPI, HTTPException, status
 
+
 from schemas.user import User
 from schemas.security import TokenData
 from utils import get_table_data
@@ -16,6 +17,8 @@ from utils import get_table_data
 ALGORITHM = "HS256"
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+with open('config_secret.yaml', 'r', encoding='utf-8') as file:
+    config_secret = yaml.safe_load(file)
 
 
 def verify_password(plain_password, hashed_password):
@@ -44,6 +47,23 @@ def get_password_hash(password):
     """
     return pwd_context.hash(password)
 
+def get_current_user(token: str = Depends(oauth2_scheme)):
+    try:
+        payload = jwt.decode(token, config_secret['HASH_SECRET_KEY'], algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        return username
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 def get_user(username: str):
     """
