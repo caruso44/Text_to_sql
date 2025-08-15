@@ -2,6 +2,7 @@ import yaml
 from typing import Annotated
 from datetime import timedelta
 from uuid import UUID, uuid4
+from datetime import datetime
 
 import uvicorn
 from fastapi import FastAPI, FastAPI, Response, Depends, HTTPException, status
@@ -15,8 +16,9 @@ from models.rewoo_agent import RewooAgent
 from session import SessionData, BasicVerifier
 from schemas.user import User, UserCredentials
 from schemas.security import Token
+from schemas.session import ChatMessage
 from security import authenticate_user, create_access_token, get_password_hash
-from utils import get_table_data, write_table_data, run_sql
+from utils import get_table_data, write_table_data, run_sql, get_Chat_history
 
 
 app = FastAPI()
@@ -56,18 +58,27 @@ async def Text_to_SQL_FewShot(question):
     answer = generate_answer_tool(question, str(output))
     return {"answer": answer}
 
+
 @app.get("/run_query_rewoo/{question}", tags = ["LLM"])
-async def Text_to_SQL_Rewoo(question):
+async def Text_to_SQL_Rewoo(question : str, session_id: UUID):
     agent = RewooAgent()
+    chat_history = get_Chat_history(session_id)
+    print(chat_history)
     dict_input = {
         "user_input": question,
         "iter" : 0,
         "max_iter" : 10,
-        "plan" : ""
+        "plan" : "",
+        "output" :  "",
+        "chat_history" : chat_history["messages"]
     }
     answer = agent.invoke(dict_input)
-    return {"answer": answer}
-
+    sql = answer["output"]
+    output = run_sql(sql, "store_info")
+    answer = generate_answer_tool(question, str(output))
+    data = ChatMessage(session_id= session_id, message = answer, question = question, timestamp = datetime.now())
+    write_table_data("users", "User_Chat_History", data)
+    return data
 
 @app.get("/whoami", dependencies=[Depends(cookie)], tags = ["Session"])
 async def whoami(session_data: SessionData = Depends(verifier)):
@@ -79,7 +90,6 @@ async def delete_specific_session(session_id: UUID, response: Response):
     session_data = await backend.read(session_id)
     if session_data is None:
         raise HTTPException(status_code=404, detail="Session not found")
-
     await backend.delete(session_id)
 
     cookie.delete_from_response(response)
@@ -91,7 +101,6 @@ async def delete_specific_session(session_id: UUID, response: Response):
 async def create_session(name: str, response: Response):
     session_id = uuid4()
     data = SessionData(session_name=name)
-
     await backend.create(session_id, data)
     cookie.attach_to_response(response, session_id)
 
@@ -101,10 +110,12 @@ async def create_session(name: str, response: Response):
 
     return {"message": f"Created session '{name}'", "session_id": str(session_id)}
 
+
 @app.get("/list_sessions/{name}", tags = ["Session"])
 async def list_sessions(name: str):
     sessions = user_sessions.get(name, [])
     return {"sessions": [str(sid) for sid in sessions]}
+
 
 @app.post("/switch_session/{session_id}", tags = ["Session"])
 async def switch_session(session_id: UUID, response: Response):
@@ -132,6 +143,7 @@ async def login_for_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
     return Token(access_token=access_token, token_type="bearer")
+
 
 @app.post("/create_login", tags = ["Security"])
 async def create_login(

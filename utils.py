@@ -1,7 +1,9 @@
 import re
 import yaml
 import pandas as pd
+
 from sqlalchemy import create_engine, text
+from pydantic import BaseModel
 
 from schemas.user import User
 
@@ -48,14 +50,14 @@ def get_table_data(db_name: str, table_name: str):
         return {"error": str(e)}
     
 
-def write_table_data(db_name: str, table_name: str, data: User):
+def write_table_data(db_name: str, table_name: str, data):
     """
     Writes a single row of user data into a specified table in the PostgreSQL database.
     
     Args:
         db_name (str): Name of the target database.
         table_name (str): Name of the table where data will be inserted.
-        data (User): A Pydantic model representing the user data to insert.
+        data: A Pydantic model representing the user data to insert.
     
     Returns:
         dict: A status message indicating success or containing an error.
@@ -73,6 +75,42 @@ def write_table_data(db_name: str, table_name: str, data: User):
     except Exception as e:
         return {"error": str(e)}
 
+def get_Chat_history(session_id, db_name = "users", table_name = "User_Chat_History"):
+    """
+    Retrieves the last 5 messages from the specified table for a given session ID.
+
+    Args:
+        session_id (str): The session ID to filter messages.
+        db_name (str): Name of the target PostgreSQL database.
+        table_name (str): Name of the table containing chat history.
+
+    Returns:
+        dict: A dictionary with the retrieved messages or an error message.
+    """
+    try:
+        with open("config_secret.yaml", "r") as f:
+            config = yaml.safe_load(f)
+        db = config.get("DB_LOGIN_PARAMS")
+        db_url = f"postgresql://{db['user']}:{db['password']}@{db['host']}:{db['port']}/{db_name}"
+
+        engine = create_engine(db_url)
+
+        query = text(f"""
+            SELECT message 
+             FROM "{table_name}"
+            WHERE session_id = :session_id
+            ORDER BY timestamp DESC
+            LIMIT 5
+        """)
+
+        with engine.connect() as conn:
+            result = conn.execute(query, {"session_id": session_id})
+            messages = [row.message for row in result.fetchall()]
+
+        return {"status": "success", "messages": messages}
+
+    except Exception as e:
+        return {"error": str(e)}
 
 def run_sql(query: str, db_name: str):
     """
