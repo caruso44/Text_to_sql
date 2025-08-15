@@ -16,15 +16,13 @@ from models.rewoo_agent import RewooAgent
 from session import SessionData, BasicVerifier
 from schemas.user import User, UserCredentials
 from schemas.security import Token
-from schemas.session import ChatMessage
+from schemas.session import ChatMessage, SessionData
 from security import authenticate_user, create_access_token, get_password_hash, get_current_user
-from utils import get_table_data, write_table_data, run_sql, get_Chat_history
+from utils import get_table_data, write_table_data, run_sql, get_Chat_history, delete_table_data
 
 
 app = FastAPI()
 
-cookie_params = CookieParameters()
-user_sessions: dict[str, list[UUID]] = {}
 with open('config_secret.yaml', 'r', encoding='utf-8') as file:
     config_secret = yaml.safe_load(file)
 
@@ -34,21 +32,6 @@ with open('config.yaml', 'r', encoding='utf-8') as file:
 
 ACCESS_TOKEN_EXPIRE_MINUTES = config['ACCESS_TOKEN_EXPIRE_MINUTES']
 
-cookie = SessionCookie(
-    cookie_name="cookie",
-    identifier="general_verifier",
-    auto_error=True,
-    secret_key=config_secret['COOKIE_SECRET_KEY'],
-    cookie_params=cookie_params,
-)
-backend = InMemoryBackend[UUID, SessionData]()
-
-verifier = BasicVerifier(
-    identifier="general_verifier",
-    auto_error=True,
-    backend=backend,
-    auth_http_exception=HTTPException(status_code=403, detail="invalid session"),
-)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -86,46 +69,32 @@ async def Text_to_SQL_Rewoo(
 
 
 
-@app.delete("/delete_session/{session_id}", tags = ["Session"])
-async def delete_specific_session(session_id: UUID, response: Response):
-    session_data = await backend.read(session_id)
-    if session_data is None:
-        raise HTTPException(status_code=404, detail="Session not found")
-    await backend.delete(session_id)
+@app.delete("/delete_session/{session_id}", tags=["Session"])
+async def delete_specific_session(session_id: UUID):
+    res_sessions = delete_table_data("users", "Sessions", "session_id", session_id)
+    res_chat = delete_table_data("users", "User_Chat_History", "session_id", session_id)
 
-    cookie.delete_from_response(response)
+    if "error" in res_sessions or "error" in res_chat:
+        return {
+            "message": f"Error deleting session {session_id}",
+            "details": {"sessions": res_sessions, "chat": res_chat}
+        }
 
     return {"message": f"Deleted session {session_id}"}
 
 
 @app.post("/create_session/{name}", tags = ["Session"])
-async def create_session(name: str, response: Response):
+async def create_session(name: str):
     session_id = uuid4()
-    data = SessionData(session_name=name)
-    await backend.create(session_id, data)
-    cookie.attach_to_response(response, session_id)
-
-    if name not in user_sessions:
-        user_sessions[name] = []
-    user_sessions[name].append(session_id)
-
+    session = SessionData(session_id= session_id, session_name=name)
+    write_table_data("users", "Sessions", session)
     return {"message": f"Created session '{name}'", "session_id": str(session_id)}
 
 
-@app.get("/list_sessions/{name}", tags = ["Session"])
-async def list_sessions(name: str):
-    sessions = user_sessions.get(name, [])
+@app.get("/list_sessions", tags = ["Session"])
+async def list_sessions():
+    sessions = get_table_data("users", "Sessions")
     return {"sessions": [str(sid) for sid in sessions]}
-
-
-@app.post("/switch_session/{session_id}", tags = ["Session"])
-async def switch_session(session_id: UUID, response: Response):
-    session_data = await backend.read(session_id)
-    if session_data is None:
-        raise HTTPException(status_code=404, detail="Session ID not found")
-
-    cookie.attach_to_response(response, session_id)
-    return {"message": f"Switched to session '{session_data.session_name}'", "session_id": str(session_id)}
 
 
 @app.post("/token", tags = ["Security"])
