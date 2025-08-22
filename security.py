@@ -77,7 +77,7 @@ def get_user(username: str):
     """
     db = get_table_data("users", "user_info")
     if username in db.username.values:
-        user_dict = db[db['username'] == username].loc[0].to_dict()
+        user_dict = db[db['username'] == username].iloc[0].to_dict()
         return User(**user_dict)
 
 
