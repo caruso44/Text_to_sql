@@ -5,7 +5,7 @@ import pandas as pd
 from sqlalchemy import create_engine, text
 from pydantic import BaseModel
 
-from schemas.user import User
+from .schemas.user import User
 
 
 def extract_sql(code_block: str) -> str:
