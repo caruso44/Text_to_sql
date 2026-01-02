@@ -9,9 +9,9 @@ from passlib.context import CryptContext
 from fastapi import Depends, FastAPI, HTTPException, status
 
 
-from schemas.user import User
-from schemas.security import TokenData
-from utils import get_table_data
+from .schemas.user import User
+from .schemas.security import TokenData
+from .utils import get_table_data
 
 
 ALGORITHM = "HS256"

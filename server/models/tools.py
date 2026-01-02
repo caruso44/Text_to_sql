@@ -10,7 +10,7 @@ from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langgraph.graph import END, START, StateGraph
 
-from utils import extract_sql
+from server.utils import extract_sql
 
 def generate_SQL_tool(user_input):
     load_dotenv() 

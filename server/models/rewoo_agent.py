@@ -10,7 +10,7 @@ from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langgraph.graph import END, START, StateGraph
 
-from models.tools import generate_SQL_tool
+from server.models.tools import generate_SQL_tool
 
 
 class AgentSchema(TypedDict):
