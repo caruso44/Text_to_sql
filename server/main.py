@@ -10,6 +10,7 @@ from fastapi_sessions.backends.implementations import InMemoryBackend
 from fastapi_sessions.session_verifier import SessionVerifier
 from fastapi_sessions.frontends.implementations import SessionCookie, CookieParameters
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.middleware.cors import CORSMiddleware
 
 from .models.tools import generate_SQL_tool, generate_answer_tool
 from .models.rewoo_agent import RewooAgent
@@ -22,6 +23,14 @@ from .utils import get_table_data, write_table_data, run_sql, get_Chat_history, 
 
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"], 
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 with open('config_secret.yaml', 'r', encoding='utf-8') as file:
     config_secret = yaml.safe_load(file)
@@ -47,7 +56,7 @@ async def Text_to_SQL_FewShot(question):
 async def Text_to_SQL_Rewoo(
     question : str, 
     session_id: UUID, 
-    current_user: str = Depends(get_current_user)
+    #current_user: str = Depends(get_current_user)
     ):
     agent = RewooAgent()
     chat_history = get_Chat_history(session_id)
@@ -94,7 +103,8 @@ async def create_session(name: str):
 @app.get("/list_sessions", tags = ["Session"])
 async def list_sessions():
     sessions = get_table_data("users", "Sessions")
-    return {"sessions": [str(sid) for sid in sessions]}
+    data = sessions.assign(session_id=sessions["session_id"].astype(str)).to_dict(orient="records")
+    return {"sessions": data}
 
 
 @app.post("/token", tags = ["Security"])
