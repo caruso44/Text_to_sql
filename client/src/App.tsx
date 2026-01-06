@@ -18,7 +18,10 @@ function Question({selectedSessionId}: {selectedSessionId: string | null}) {
     const response = await fetch(
       `${API_URL}/run_query_rewoo/${encodeURIComponent(text)}?session_id=${selectedSessionId}`,
       {
-        method: "GET"
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${localStorage.getItem("access_token") || ""}`
+        }
       }
     );
 
@@ -39,6 +42,66 @@ function Question({selectedSessionId}: {selectedSessionId: string | null}) {
     </div>
   )
 }
+
+function Login() {
+  // Implement login functionality here
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [status, setStatus] = useState<string>("");
+
+  async function handleLogin() {
+    const body = new URLSearchParams();
+    body.append("username", username);
+    body.append("password", password);
+    const response = await fetch(`${API_URL}/token`, {
+      method: "POST",
+      body: body
+    });
+    if (!response.ok) {
+      setStatus("Login failed");
+      return;
+    }
+    const data = await response.json();
+    localStorage.setItem("access_token", data.access_token);
+    setStatus(`Login successful.`);
+  }
+   return (
+    <div style={{ border: "1px solid #ccc", padding: 12, marginBottom: 12 }}>
+      <h3>Login</h3>
+
+      <input
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+        placeholder="username"
+        style={{ display: "block", marginBottom: 8 }}
+      />
+      <input
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        placeholder="password"
+        type="password"
+        style={{ display: "block", marginBottom: 8 }}
+      />
+
+      <button onClick={handleLogin}>Login</button>
+      <div style={{ marginTop: 8 }}>{status}</div>
+    </div>
+  );
+}
+
+function Logout() {
+  function handleLogout() {
+    localStorage.removeItem("access_token");
+  }
+
+  return (
+    <div style={{ border: "1px solid #ccc", padding: 12, marginBottom: 12 }}>
+      <h3>Logout</h3>
+      <button onClick={handleLogout}>Logout</button>
+    </div>
+  );
+}
+
 
 function SelectSession({selectedSessionId, setSelectedSessionId}: {selectedSessionId: string | null, setSelectedSessionId: (id: string) => void}) {
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -105,6 +168,8 @@ function App() {
 
   return (
     <div className="App">
+      <Login />
+      <Logout />
       <Question selectedSessionId={selectedSessionId} />
       <SelectSession
         selectedSessionId={selectedSessionId}

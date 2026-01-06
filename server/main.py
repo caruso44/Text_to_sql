@@ -56,7 +56,7 @@ async def Text_to_SQL_FewShot(question):
 async def Text_to_SQL_Rewoo(
     question : str, 
     session_id: UUID, 
-    #current_user: str = Depends(get_current_user)
+    current_user: str = Depends(get_current_user)
     ):
     agent = RewooAgent()
     chat_history = get_Chat_history(session_id)
