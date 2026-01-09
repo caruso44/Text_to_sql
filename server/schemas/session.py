@@ -5,7 +5,7 @@ from uuid import UUID
 
 class SessionData(BaseModel):
     session_id: UUID
-    session_name: str
+    username: str
 
 class ChatMessage(BaseModel):
     session_id: UUID

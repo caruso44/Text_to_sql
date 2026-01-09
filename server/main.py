@@ -92,19 +92,27 @@ async def delete_specific_session(session_id: UUID):
     return {"message": f"Deleted session {session_id}"}
 
 
-@app.post("/create_session/{name}", tags = ["Session"])
-async def create_session(name: str):
+@app.post("/create_session", tags = ["Session"])
+async def create_session(current_user=Depends(get_current_user)):
     session_id = uuid4()
-    session = SessionData(session_id= session_id, session_name=name)
+    session = SessionData(session_id= session_id, username=current_user)
     write_table_data("users", "Sessions", session)
-    return {"message": f"Created session '{name}'", "session_id": str(session_id)}
-
+    return {"message": f"Created session '{current_user}'", "session_id": str(session_id)}
 
 @app.get("/list_sessions", tags = ["Session"])
-async def list_sessions():
+async def list_sessions(current_user=Depends(get_current_user)):
     sessions = get_table_data("users", "Sessions")
-    data = sessions.assign(session_id=sessions["session_id"].astype(str)).to_dict(orient="records")
+    sessions_by_user = sessions[sessions["username"] == current_user]
+    data = sessions_by_user.assign(session_id=sessions_by_user["session_id"].astype(str)).to_dict(orient="records")
     return {"sessions": data}
+
+
+@app.post("/get_chat_history/{session_id}", tags = ["Session"])
+async def get_chat_history(session_id: UUID):
+    chat_history = get_table_data("users", "User_Chat_History")
+    session_chat_history = chat_history[chat_history["session_id"] == session_id]
+    data = session_chat_history.assign(session_id=session_chat_history["session_id"].astype(str)).to_dict(orient="records")
+    return {"chat_history": data}
 
 
 @app.post("/token", tags = ["Security"])

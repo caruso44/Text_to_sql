@@ -4,7 +4,7 @@ import {useNavigate} from 'react-router-dom';
 
 type Session = {
   session_id: string;
-  session_name: string;
+  user_email: string;
 }
 
 const API_URL = "http://127.0.0.1:8000"
@@ -59,13 +59,34 @@ function Logout() {
   );
 }
 
+function CreateSession() {
+  async function buildSession() {
+    const response = await fetch(`${API_URL}/create_session`,{
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${localStorage.getItem("access_token") || ""}`
+      }
+    });
+    const data = await response.json();
+    console.log("Created session:", data);
+  }
+  return (
+    <div>
+      <button onClick={buildSession}>Create Session</button>
+    </div>
+  );
+}
+
 
 function SelectSession({selectedSessionId, setSelectedSessionId}: {selectedSessionId: string | null, setSelectedSessionId: (id: string) => void}) {
   const [sessions, setSessions] = useState<Session[]>([]);
 
   async function fetchSessions() {
     const response = await fetch(`${API_URL}/list_sessions`, {
-       method: "GET" 
+       method: "GET",
+        headers: {
+          "Authorization": `Bearer ${localStorage.getItem("access_token") || ""}`
+        } 
     });
     const data = await response.json();
     console.log("Data:", data);
@@ -109,7 +130,7 @@ function SelectSession({selectedSessionId, setSelectedSessionId}: {selectedSessi
                 }}
               >
                 <td style={{ border: "1px solid #ccc", padding: "8px" }}>{session.session_id}</td>
-                <td style={{ border: "1px solid #ccc", padding: "8px" }}>{session.session_name}</td>
+                <td style={{ border: "1px solid #ccc", padding: "8px" }}>{session.user_email}</td>
               </tr>
             );
           })}
@@ -125,6 +146,7 @@ export default function AppPage() {
 
   return (
     <div className="App">
+      <CreateSession />
       <Logout />
       <Question selectedSessionId={selectedSessionId} />
       <SelectSession
